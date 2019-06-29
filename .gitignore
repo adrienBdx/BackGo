@@ -13,3 +13,8 @@
 github.com
 golang.org
 GinJokes/jokescred.env
+### Go Patch ###
+/vendor/
+/Godeps/
+google.golang.org/appengine/
+gopkg.in/toast.v1/
