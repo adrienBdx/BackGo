@@ -16,15 +16,6 @@ var articleIds []int
 var articleTitles []string
 var notFirstTurn = false
 
-func alert(title string, bodyMessage string) {
-
-	alert := beeep.Alert(title, bodyMessage, "assets/icongo.png")
-
-	if alert != nil {
-		panic(alert)
-	}
-}
-
 func main() {
 
 	alert("Starting scraper", "Launching..")
@@ -43,17 +34,16 @@ func main() {
 
 	alert("Shutdown", "This program is running since 720h, 1 month, and will stop. Take a rest.")
 
-	/*
-		c.Visit("https://www.boursorama.com/bourse/devises/taux-de-change-euro-dollarcanadien-EUR-CAD/")
-		// span[c-instrument c-instrument--last]
-		c.OnHTML("span[data-ist-last]", func(e *colly.HTMLElement) {
-			fmt.Println(e.Attr("class"))
-			fmt.Println(e.Text)
-			fmt.Println(e.Name)
-		})
-	*/
-
 	fmt.Println("hello world")
+}
+
+func alert(title string, bodyMessage string) {
+
+	alert := beeep.Alert(title, bodyMessage, "assets/icongo.png") // The Gopher Mascot
+
+	if alert != nil {
+		panic(alert)
+	}
 }
 
 func readWebsite(targetURL string, targetHTML string, activeAlert bool) {
@@ -135,25 +125,3 @@ func tryCleanFormat(title string) string {
 
 	return titleNormalized
 }
-
-/*
-func readWebsite() {
-	c := colly.NewCollector()
-	c.OnHTML("span[class=article__title-label]", func(e *colly.HTMLElement) {
-		fmt.Println(e.Attr("class"))
-		fmt.Println(e.Text)
-		fmt.Println(e.Name)
-		fmt.Println(len(articleIds))
-
-		articleTitles = append(articleTitles, e.Text)
-		fmt.Println(len(articleTitles))
-	})
-	//LeMonde span[class=article__title-label]
-
-	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL.String())
-	})
-
-	c.Visit("https://www.lemonde.fr/")
-}
-*/
