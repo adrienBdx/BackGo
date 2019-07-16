@@ -1,4 +1,4 @@
-const AUTH0_CLIENT_ID = "DTqwSen7qTUGp7cai4tWDMdaxF9lj7Np";
+const AUTH0_CLIENT_ID = "";
 const AUTH0_DOMAIN = "dev-apigo.eu.auth0.com";
 const AUTH0_CALLBACK_URL = location.href;
 const AUTH0_API_AUDIENCE = "";
