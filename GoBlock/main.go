@@ -15,9 +15,6 @@ import (
 )
 
 // Types
-
-var Blockchain []Block
-
 type Block struct {
 	Index     int
 	Timestamp string
@@ -25,6 +22,8 @@ type Block struct {
 	Hash      string
 	PrevHash  string
 }
+
+var Blockchain []Block
 
 type Message struct {
 	BPM int
@@ -125,7 +124,7 @@ func handleWriteBlock(writer http.ResponseWriter, request *http.Request) {
 
 	decoder := json.NewDecoder(request.Body)
 
-	if err := decoder.Decode(&m); err != nil {
+	if err := decoder.Decode(&message); err != nil {
 		respondWithJson(writer, request, http.StatusBadRequest, request.Body)
 		return
 	}
@@ -140,6 +139,8 @@ func handleWriteBlock(writer http.ResponseWriter, request *http.Request) {
 	if isBlockValid(newBlock, Blockchain[len(Blockchain)-1]) {
 		newBlockchain := append(Blockchain, newBlock)
 		replaceChain(newBlockchain)
+
+		// Log debug
 		spew.Dump(Blockchain)
 	}
 
