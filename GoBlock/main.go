@@ -12,9 +12,11 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
-// Types
+/// -- Types --
+
 type Block struct {
 	Index     int
 	Timestamp string
@@ -31,7 +33,20 @@ type Message struct {
 
 // Func
 func main() {
+	err := godotenv.Load()
 
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		genesisBlock := Block{0, time.Now().String(), 0, "", ""}
+		spew.Dump(genesisBlock)
+
+		Blockchain = append(Blockchain, genesisBlock)
+	}()
+
+	log.Fatal(run())
 }
 
 func calculateHash(block Block) string {
@@ -146,4 +161,16 @@ func handleWriteBlock(writer http.ResponseWriter, request *http.Request) {
 
 	respondWithJSON(writer, request, http.StatusCreated, newBlock)
 
+}
+
+func respondWithJSON(writer http.ResponseWriter, request *http.Request, code int, payload interface{}) {
+	response, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte("HTTP 500: Internal Server Error"))
+		return
+	}
+
+	writer.WriteHeader(code)
+	writer.Write(response)
 }
