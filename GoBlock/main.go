@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -97,8 +96,8 @@ func replaceChain(newBlocks []Block) {
 // API
 func run() error {
 	mux := makeMuxRouter()
-	httpAddr := os.Getenv("ADDR")
-	log.Println("Listening on ", os.Getenv("ADDR"))
+	httpAddr := "8080" //os.Getenv("ADDR")
+	log.Println("Listening on ", "8080" /*os.Getenv("ADDR")*/)
 
 	server := &http.Server{
 		Addr:           ":" + httpAddr,
@@ -140,7 +139,7 @@ func handleWriteBlock(writer http.ResponseWriter, request *http.Request) {
 	decoder := json.NewDecoder(request.Body)
 
 	if err := decoder.Decode(&message); err != nil {
-		respondWithJson(writer, request, http.StatusBadRequest, request.Body)
+		respondWithJSON(writer, request, http.StatusBadRequest, request.Body)
 		return
 	}
 	//ToDo check
@@ -148,7 +147,7 @@ func handleWriteBlock(writer http.ResponseWriter, request *http.Request) {
 
 	newBlock, err := generateBlock(Blockchain[len(Blockchain)-1], message.BPM)
 	if err != nil {
-		respondWithJson(writer, request, http.StatusInternalServerError, message)
+		respondWithJSON(writer, request, http.StatusInternalServerError, message)
 		return
 	}
 	if isBlockValid(newBlock, Blockchain[len(Blockchain)-1]) {
