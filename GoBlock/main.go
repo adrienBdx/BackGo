@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,32 +33,91 @@ type Block struct {
 	Nonce      string
 }
 
-var Blockchain []Block
-
 type Message struct {
 	BPM int
 }
 
 var mutex = &sync.Mutex{}
+var blockServer chan []Block
+var Blockchain []Block
 
 // Func
 func main() {
 	err := godotenv.Load()
-
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	blockServer = make(chan []Block)
 
 	go func() {
 		genesisBlock := Block{0, time.Now().String(), 0, "", "", 1, ""}
 		spew.Dump(genesisBlock)
 
-		mutex.Lock()
 		Blockchain = append(Blockchain, genesisBlock)
-		mutex.Unlock()
 	}()
 
+	server, err := net.Listen("tcp", ":"+os.Getenv("port"))
+	//defer server.Close()
+
+	for {
+		conn, err := server.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		go handleConn(conn)
+	}
+
 	log.Fatal(run())
+}
+
+func handleConn(conn net.Conn) {
+
+	// Data input (BPM) part
+	io.WriteString(conn, "Enter a new BPM:")
+
+	scanner := bufio.NewScanner(conn)
+
+	go func() {
+		for scanner.Scan() {
+			bpm, err := strconv.Atoi(scanner.Text())
+			if err != nil {
+				log.Printf("%v not a number: %v", scanner.Text(), err)
+				continue
+			}
+			newBlock, err := generateBlock(Blockchain[len(Blockchain)-1], bpm)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			if isBlockValid(newBlock, Blockchain[len(Blockchain)-1]) {
+				newBlockchain := append(Blockchain, newBlock)
+				replaceChain(newBlockchain)
+			}
+
+			blockServer <- Blockchain
+			io.WriteString(conn, "\nEnter a new BPM:")
+		}
+	}()
+
+	// simulate receiving broadcast
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+			output, err := json.Marshal(Blockchain)
+			if err != nil {
+				log.Fatal(err)
+			}
+			io.WriteString(conn, string(output))
+		}
+	}()
+
+	for _ = range blockServer {
+		spew.Dump(Blockchain)
+	}
+
+	defer conn.Close()
 }
 
 func calculateHash(block Block) string {
@@ -131,8 +193,8 @@ func replaceChain(newBlocks []Block) {
 // API
 func run() error {
 	mux := makeMuxRouter()
-	httpAddr := os.Getenv("ADDR")
-	log.Println("Listening on", os.Getenv("ADDR"))
+	httpAddr := os.Getenv("port")
+	log.Println("Listening on", os.Getenv("port"))
 
 	server := &http.Server{
 		Addr:           ":" + httpAddr,
