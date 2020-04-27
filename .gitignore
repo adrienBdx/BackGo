@@ -18,3 +18,4 @@ GinJokes/jokescred.env
 /Godeps/
 google.golang.org/appengine/
 gopkg.in/toast.v1/
+.DS_Store

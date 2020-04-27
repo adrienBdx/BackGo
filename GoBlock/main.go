@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -17,11 +19,13 @@ import (
 /// -- Types --
 
 type Block struct {
-	Index     int
-	Timestamp string
-	BPM       int
-	Hash      string
-	PrevHash  string
+	Index      int
+	Timestamp  string
+	BPM        int
+	Hash       string
+	PrevHash   string
+	Difficulty int
+	Nonce      string
 }
 
 var Blockchain []Block
@@ -29,6 +33,8 @@ var Blockchain []Block
 type Message struct {
 	BPM int
 }
+
+var mutex = &sync.Mutex{}
 
 // Func
 func main() {
@@ -39,7 +45,7 @@ func main() {
 	}
 
 	go func() {
-		genesisBlock := Block{0, time.Now().String(), 0, "", ""}
+		genesisBlock := Block{0, time.Now().String(), 0, "", "", 1, ""}
 		spew.Dump(genesisBlock)
 
 		Blockchain = append(Blockchain, genesisBlock)
@@ -96,7 +102,7 @@ func replaceChain(newBlocks []Block) {
 // API
 func run() error {
 	mux := makeMuxRouter()
-	httpAddr := "8080" //os.Getenv("ADDR")
+	httpAddr := os.Getenv("ADDR")
 	log.Println("Listening on ", "8080" /*os.Getenv("ADDR")*/)
 
 	server := &http.Server{
@@ -142,10 +148,13 @@ func handleWriteBlock(writer http.ResponseWriter, request *http.Request) {
 		respondWithJSON(writer, request, http.StatusBadRequest, request.Body)
 		return
 	}
-	//ToDo check
+
 	defer request.Body.Close()
 
+	mutex.Lock()
 	newBlock, err := generateBlock(Blockchain[len(Blockchain)-1], message.BPM)
+	mutex.Unlock()
+
 	if err != nil {
 		respondWithJSON(writer, request, http.StatusInternalServerError, message)
 		return
