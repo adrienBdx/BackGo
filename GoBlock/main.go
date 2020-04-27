@@ -4,10 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,19 +50,28 @@ func main() {
 		genesisBlock := Block{0, time.Now().String(), 0, "", "", 1, ""}
 		spew.Dump(genesisBlock)
 
+		mutex.Lock()
 		Blockchain = append(Blockchain, genesisBlock)
+		mutex.Unlock()
 	}()
 
 	log.Fatal(run())
 }
 
 func calculateHash(block Block) string {
-	record := string(block.Index) + block.Timestamp + string(block.BPM) + block.PrevHash
+	record := string(block.Index) + block.Timestamp + string(block.BPM) + block.PrevHash + block.Nonce
 	hash := sha256.New()
 	hash.Write([]byte(record))
 	hashed := hash.Sum(nil)
 
 	return hex.EncodeToString(hashed)
+}
+
+func isHashValid(hash string, difficulty int) bool {
+
+	prefix := strings.Repeat("0", difficulty)
+
+	return strings.HasPrefix(hash, prefix)
 }
 
 func generateBlock(previousBlock Block, BPM int) (Block, error) {
@@ -71,7 +82,25 @@ func generateBlock(previousBlock Block, BPM int) (Block, error) {
 	newBlock.Timestamp = time.Now().String()
 	newBlock.BPM = BPM
 	newBlock.PrevHash = previousBlock.Hash
-	newBlock.Hash = calculateHash(newBlock)
+	newBlock.Difficulty = 1
+
+	for i := 0; ; i++ {
+		hex := fmt.Sprintf("%x", i)
+		newBlock.Nonce = hex
+
+		newHashAttempt := calculateHash(newBlock)
+
+		if !isHashValid(newHashAttempt, newBlock.Difficulty) {
+			fmt.Println(newHashAttempt, "Do more work.")
+			//time.Sleep(time.Second) time consuming simulation
+
+			continue
+		}
+
+		fmt.Println(newHashAttempt, "Valid hash, block done.")
+		newBlock.Hash = newHashAttempt
+		break
+	}
 
 	return newBlock, nil
 }
@@ -103,7 +132,7 @@ func replaceChain(newBlocks []Block) {
 func run() error {
 	mux := makeMuxRouter()
 	httpAddr := os.Getenv("ADDR")
-	log.Println("Listening on ", "8080" /*os.Getenv("ADDR")*/)
+	log.Println("Listening on", os.Getenv("ADDR"))
 
 	server := &http.Server{
 		Addr:           ":" + httpAddr,
